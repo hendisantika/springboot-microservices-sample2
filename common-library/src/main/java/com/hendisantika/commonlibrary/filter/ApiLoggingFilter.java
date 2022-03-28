@@ -25,4 +25,8 @@ public class ApiLoggingFilter implements Filter {
         this.requestIdHeaderName = requestIdHeaderName;
         this.requestIdMDCParamName = requestIdMDCParamName;
     }
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+    }
 }
