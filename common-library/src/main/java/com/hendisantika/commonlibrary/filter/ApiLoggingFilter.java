@@ -8,6 +8,8 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -65,5 +67,21 @@ public class ApiLoggingFilter implements Filter {
         } catch (Throwable a) {
             LOGGER.error(a.getMessage());
         }
+    }
+
+    private Map<String, String> getTypesafeRequestMap(HttpServletRequest request) {
+        Map<String, String> typesafeRequestMap = new HashMap<String, String>();
+        Enumeration<?> requestParamNames = request.getParameterNames();
+        while (requestParamNames.hasMoreElements()) {
+            String requestParamName = (String) requestParamNames.nextElement();
+            String requestParamValue;
+            if (requestParamName.equalsIgnoreCase("password")) {
+                requestParamValue = "********";
+            } else {
+                requestParamValue = request.getParameter(requestParamName);
+            }
+            typesafeRequestMap.put(requestParamName, requestParamValue);
+        }
+        return typesafeRequestMap;
     }
 }
