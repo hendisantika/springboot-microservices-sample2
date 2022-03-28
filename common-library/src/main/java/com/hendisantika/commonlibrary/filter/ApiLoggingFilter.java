@@ -2,8 +2,14 @@ package com.hendisantika.commonlibrary.filter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
-import java.util.logging.Filter;
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Created by IntelliJ IDEA.
@@ -28,5 +34,36 @@ public class ApiLoggingFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
+    }
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        try {
+            HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+            HttpServletResponse httpServletResponse = (HttpServletResponse) response;
+            Map<String, String> requestMap = this.getTypesafeRequestMap(httpServletRequest);
+            String requestIdHeaderValue = httpServletRequest.getHeader(requestIdHeaderName);
+            BufferedRequestWrapper bufferedRequest = new BufferedRequestWrapper(httpServletRequest);
+            BufferedResponseWrapper bufferedResponse = new BufferedResponseWrapper(httpServletResponse);
+            String requestId = requestIdHeaderValue != null ? requestIdHeaderValue
+                    : UUID.randomUUID().toString();
+            MDC.put(requestIdMDCParamName, requestId);
+            final StringBuilder logRequest = new StringBuilder("HTTP ").append(httpServletRequest.getMethod())
+                    .append(" \"").append(httpServletRequest.getServletPath()).append("\" ").append(", parameters=")
+                    .append(requestMap).append(", body=").append(bufferedRequest.getRequestBody())
+                    .append(", remote_address=").append(httpServletRequest.getRemoteAddr());
+            LOGGER.info(logRequest.toString());
+            try {
+                chain.doFilter(bufferedRequest, bufferedResponse);
+            } finally {
+                final StringBuilder logResponse = new StringBuilder("HTTP RESPONSE ")
+                        .append(bufferedResponse.getContent());
+                LOGGER.info(logResponse.toString());
+                MDC.clear();
+            }
+        } catch (Throwable a) {
+            LOGGER.error(a.getMessage());
+        }
     }
 }
